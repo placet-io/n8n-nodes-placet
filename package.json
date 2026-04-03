@@ -1,0 +1,57 @@
+{
+	"name": "n8n-nodes-placet",
+	"version": "0.1.0",
+	"description": "n8n community node for Placet — the open-source Human-in-the-Loop platform",
+	"license": "MIT",
+	"type": "commonjs",
+	"homepage": "https://placet.io",
+	"keywords": [
+		"n8n-community-node-package",
+		"n8n",
+		"placet",
+		"human-in-the-loop",
+		"hitl",
+		"approval"
+	],
+	"author": {
+		"name": "Placet",
+		"email": "support@placet.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/placet-io/n8n-nodes-placet.git"
+	},
+	"scripts": {
+		"build": "n8n-node build",
+		"build:watch": "tsc --watch",
+		"dev": "n8n-node dev",
+		"lint": "n8n-node lint",
+		"lint:fix": "n8n-node lint --fix",
+		"release": "n8n-node release",
+		"prepublishOnly": "n8n-node prerelease"
+	},
+	"files": [
+		"dist"
+	],
+	"n8n": {
+		"n8nNodesApiVersion": 1,
+		"strict": true,
+		"credentials": [
+			"dist/credentials/PlacetApi.credentials.js"
+		],
+		"nodes": [
+			"dist/nodes/Placet/Placet.node.js",
+			"dist/nodes/PlacetTrigger/PlacetTrigger.node.js"
+		]
+	},
+	"devDependencies": {
+		"@n8n/node-cli": "*",
+		"eslint": "9.32.0",
+		"prettier": "3.6.2",
+		"release-it": "^19.0.4",
+		"typescript": "5.9.2"
+	},
+	"peerDependencies": {
+		"n8n-workflow": "*"
+	}
+}

@@ -1,0 +1,22 @@
+node_modules/
+dist/
+
+# IDE / editor
+.vscode/
+
+# AI agent instructions
+.agents/
+AGENTS.md
+CLAUDE.md
+
+# Dev/reference only
+.reference/
+examples/
+Makefile
+
+# TypeScript incremental build
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db

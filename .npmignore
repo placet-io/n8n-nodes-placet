@@ -1,0 +1,30 @@
+# Source / dev files
+src/
+*.ts
+!*.d.ts
+tsconfig.json
+eslint.config.mjs
+.prettierrc.js
+
+# Build artifacts
+*.tsbuildinfo
+
+# Dev / reference only
+.agents/
+.reference/
+.vscode/
+.github/
+examples/
+Makefile
+
+# AI agent instructions
+AGENTS.md
+CLAUDE.md
+
+# Dependencies
+node_modules/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,27 @@
+{
+	"node": "n8n-nodes-placet.placet",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Communication", "HITL"],
+	"subcategories": {
+		"HITL": ["Human in the Loop"]
+	},
+	"resources": {
+		"primaryDocumentation": [
+			{
+				"url": "https://docs.placet.io"
+			}
+		]
+	},
+	"alias": [
+		"human",
+		"form",
+		"wait",
+		"hitl",
+		"approval",
+		"review",
+		"human-in-the-loop",
+		"ai",
+		"placet"
+	]
+}
