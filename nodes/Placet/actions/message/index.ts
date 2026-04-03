@@ -357,9 +357,7 @@ export async function sendAndWait(
 	const approveLabel = (approvalValues.approveLabel as string) || 'Approve';
 	const disapproveLabel = (approvalValues.disapproveLabel as string) || 'Decline';
 
-	const approvalOpts: IDataObject[] = [
-		{ id: 'approve', label: approveLabel, style: 'primary' },
-	];
+	const approvalOpts: IDataObject[] = [{ id: 'approve', label: approveLabel, style: 'primary' }];
 	if (approvalType === 'double') {
 		approvalOpts.push({ id: 'reject', label: disapproveLabel, style: 'danger' });
 	}
