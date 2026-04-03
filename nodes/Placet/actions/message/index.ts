@@ -156,15 +156,21 @@ export async function requestForm(
 
 		const fields = formFields.map((f) => {
 			const field: IDataObject = {
+				type: f.type,
 				name: f.name,
 				label: f.label,
-				type: f.type,
 			};
 			if (f.required) field.required = true;
 			if (f.placeholder) field.placeholder = f.placeholder;
 			if (f.defaultValue) field.defaultValue = f.defaultValue;
-			if (f.options && f.options !== '[]') {
-				field.options = typeof f.options === 'string' ? JSON.parse(f.options) : f.options;
+			if (f.selectOptions) {
+				const selectOpts = (f.selectOptions as IDataObject).values as IDataObject[] | undefined;
+				if (selectOpts && selectOpts.length > 0) {
+					field.options = selectOpts.map((o) => ({
+						value: o.value,
+						label: o.label,
+					}));
+				}
 			}
 			return field;
 		});
