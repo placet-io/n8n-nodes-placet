@@ -300,36 +300,38 @@ export async function requestPlugin(
 	const inputMode = this.getNodeParameter('inputMode', index) as string;
 	const waitForResponse = this.getNodeParameter('waitForResponse', index) as boolean;
 
-	let review: IDataObject;
+	const pluginName = extractResourceLocatorValue(this.getNodeParameter('pluginName', index));
+	const expiresInSeconds = this.getNodeParameter('expiresInSeconds', index) as number;
+
+	let payload: IDataObject;
 
 	if (inputMode === 'customJson') {
-		const reviewJson = this.getNodeParameter('reviewJson', index) as string;
-		review = typeof reviewJson === 'string' ? JSON.parse(reviewJson) : reviewJson;
+		const pluginPayloadRaw = this.getNodeParameter('pluginPayload', index) as string | IDataObject;
+		payload =
+			typeof pluginPayloadRaw === 'string'
+				? JSON.parse(pluginPayloadRaw)
+				: (pluginPayloadRaw as IDataObject);
 	} else {
-		const pluginObj = this.getNodeParameter('pluginName', index) as IDataObject;
-		const pluginName = pluginObj.value as string;
 		const fieldsParam = this.getNodeParameter('pluginFields', index) as {
 			value: IDataObject | null;
 			schema: Array<{ id: string; type: string }>;
 		};
-		const expiresInSeconds = this.getNodeParameter('expiresInSeconds', index) as number;
-
-		const parsedFields: IDataObject = { ...(fieldsParam.value || {}) };
+		payload = { ...(fieldsParam.value || {}) };
 		if (fieldsParam.value && fieldsParam.schema) {
 			for (const field of fieldsParam.schema) {
-				const val = parsedFields[field.id];
+				const val = payload[field.id];
 				if ((field.type === 'array' || field.type === 'object') && typeof val === 'string') {
-					parsedFields[field.id] = JSON.parse(val as string);
+					payload[field.id] = JSON.parse(val as string);
 				}
 			}
 		}
-
-		review = {
-			type: pluginName,
-			payload: parsedFields,
-			expiresInSeconds,
-		};
 	}
+
+	const review: IDataObject = {
+		type: pluginName,
+		payload,
+		expiresInSeconds,
+	};
 
 	const body: IDataObject = { channelId, review };
 	if (text) body.text = text;

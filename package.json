@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-placet",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "n8n community node for Placet — the open-source Human-in-the-Loop platform",
 	"license": "MIT",
 	"type": "commonjs",

@@ -1,11 +1,14 @@
 import type {
+	IHookFunctions,
 	IPollFunctions,
+	IWebhookFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 	IDataObject,
 	ILoadOptionsFunctions,
 	INodeListSearchResult,
+	IWebhookResponseData,
 } from 'n8n-workflow';
 import { NodeConnectionTypes } from 'n8n-workflow';
 import { placetApiRequest, extractResourceLocatorValue } from '../Placet/GenericFunctions';
@@ -17,8 +20,7 @@ export class PlacetTrigger implements INodeType {
 		icon: 'file:placet.svg',
 		group: ['trigger'],
 		version: [1],
-		subtitle: 'Polls for new messages',
-		description: 'Triggers when a new message is received in a Placet channel',
+		description: 'Starts the workflow on a Placet event',
 		defaults: {
 			name: 'Placet Trigger',
 		},
@@ -32,14 +34,68 @@ export class PlacetTrigger implements INodeType {
 				required: true,
 			},
 		],
+		webhooks: [
+			{
+				name: 'default',
+				httpMethod: 'POST',
+				responseMode: 'onReceived',
+				path: 'placet-webhook',
+			},
+		],
 		properties: [
+			{
+				displayName:
+					'Each Placet channel (agent) can only have one active webhook at a time',
+				name: 'placetTriggerNotice',
+				type: 'notice',
+				default: '',
+				displayOptions: {
+					show: {
+						events: ['message:created', 'review:expired', 'review:responded'],
+					},
+				},
+			},
+			{
+				displayName: 'Trigger On',
+				name: 'events',
+				type: 'multiOptions',
+				required: true,
+				options: [
+					{
+						name: 'Message Created',
+						value: 'message:created',
+						description: 'Trigger when a new message is sent in the channel (webhook)',
+						action: 'On message created',
+					},
+					{
+						name: 'New Messages (Polling)',
+						value: 'poll',
+						description:
+							'Periodically poll for new messages at a regular interval instead of using a webhook',
+						action: 'On new message (polling)',
+					},
+					{
+						name: 'Review Expired',
+						value: 'review:expired',
+						description: 'Trigger when a review request expires (webhook)',
+						action: 'On review expired',
+					},
+					{
+						name: 'Review Responded',
+						value: 'review:responded',
+						description: 'Trigger when a user responds to a review request (webhook)',
+						action: 'On review responded',
+					},
+				],
+				default: [],
+			},
 			{
 				displayName: 'Channel',
 				name: 'channelId',
 				type: 'resourceLocator',
 				required: true,
 				default: { mode: 'list', value: '' },
-				description: 'The Placet channel (agent) to poll for new messages',
+				description: 'The Placet channel (agent) to receive events from',
 				modes: [
 					{
 						displayName: 'From List',
@@ -65,6 +121,11 @@ export class PlacetTrigger implements INodeType {
 				default: true,
 				description:
 					'Whether to automatically acknowledge received messages (sets delivery status to agent_received)',
+				displayOptions: {
+					show: {
+						events: ['poll'],
+					},
+				},
 			},
 		],
 	};
@@ -97,7 +158,76 @@ export class PlacetTrigger implements INodeType {
 		},
 	};
 
+	webhookMethods = {
+		default: {
+			async checkExists(this: IHookFunctions): Promise<boolean> {
+				const events = this.getNodeParameter('events') as string[];
+				const hasWebhookEvents = events.some((e) => e !== 'poll');
+				if (!hasWebhookEvents) return true;
+
+				const channelId = extractResourceLocatorValue(this.getNodeParameter('channelId'));
+				const webhookUrl = this.getNodeWebhookUrl('default');
+
+				const agents = (await placetApiRequest.call(this, 'GET', '/agents')) as IDataObject[];
+				const agent = agents.find((a) => a.id === channelId);
+
+				return agent?.webhookUrl === webhookUrl;
+			},
+			async create(this: IHookFunctions): Promise<boolean> {
+				const events = this.getNodeParameter('events') as string[];
+				const hasWebhookEvents = events.some((e) => e !== 'poll');
+				if (!hasWebhookEvents) return true;
+
+				const channelId = extractResourceLocatorValue(this.getNodeParameter('channelId'));
+				const webhookUrl = this.getNodeWebhookUrl('default');
+
+				await placetApiRequest.call(this, 'POST', '/agents/setWebhook', {
+					url: webhookUrl,
+					channelId,
+				});
+
+				return true;
+			},
+			async delete(this: IHookFunctions): Promise<boolean> {
+				const events = this.getNodeParameter('events') as string[];
+				const hasWebhookEvents = events.some((e) => e !== 'poll');
+				if (!hasWebhookEvents) return true;
+
+				const channelId = extractResourceLocatorValue(this.getNodeParameter('channelId'));
+
+				try {
+					await placetApiRequest.call(this, 'POST', '/agents/deleteWebhook', {
+						channelId,
+					});
+				} catch {
+					// Ignore errors during cleanup
+				}
+
+				return true;
+			},
+		},
+	};
+
+	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
+		const body = this.getBodyData() as IDataObject;
+
+		const events = this.getNodeParameter('events') as string[];
+		const webhookEvents = events.filter((e) => e !== 'poll');
+		const eventType = body.event as string | undefined;
+
+		if (eventType && webhookEvents.length > 0 && !webhookEvents.includes(eventType)) {
+			return { webhookResponse: 'OK' };
+		}
+
+		return {
+			workflowData: [this.helpers.returnJsonArray(body)],
+		};
+	}
+
 	async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
+		const events = this.getNodeParameter('events') as string[];
+		if (!events.includes('poll')) return null;
+
 		const channelId = extractResourceLocatorValue(this.getNodeParameter('channelId'));
 		const acknowledgeMessages = this.getNodeParameter('acknowledgeMessages') as boolean;
 
@@ -123,7 +253,6 @@ export class PlacetTrigger implements INodeType {
 			return null;
 		}
 
-		// Filter messages newer than last seen
 		let newMessages = messages;
 		if (lastTimestamp) {
 			newMessages = messages.filter((msg) => {
@@ -136,16 +265,13 @@ export class PlacetTrigger implements INodeType {
 			return null;
 		}
 
-		// Sort ascending by createdAt
 		newMessages.sort((a, b) => {
 			return new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime();
 		});
 
-		// Update static data with latest timestamp
 		const latestMessage = newMessages[newMessages.length - 1];
 		staticData.lastTimestamp = latestMessage.createdAt as string;
 
-		// Acknowledge messages
 		if (acknowledgeMessages) {
 			for (const msg of newMessages) {
 				try {

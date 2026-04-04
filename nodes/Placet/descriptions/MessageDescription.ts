@@ -598,14 +598,7 @@ export const messageFields: INodeProperties[] = [
 						description: 'Placeholder text shown in the input',
 						displayOptions: {
 							show: {
-								type: [
-									'text',
-									'textarea',
-									'email',
-									'url',
-									'number',
-									'password',
-								],
+								type: ['text', 'textarea', 'email', 'url', 'number', 'password'],
 							},
 						},
 					},
@@ -804,6 +797,7 @@ export const messageFields: INodeProperties[] = [
 		displayName: 'Plugin',
 		name: 'pluginName',
 		type: 'resourceLocator',
+		required: true,
 		description:
 			'The plugin to use for the review. Choose from the list or specify a name using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
 		default: { mode: 'list', value: '' },
@@ -829,7 +823,6 @@ export const messageFields: INodeProperties[] = [
 			show: {
 				resource: ['message'],
 				operation: ['requestPlugin'],
-				inputMode: ['simple'],
 			},
 		},
 	},
@@ -865,7 +858,14 @@ export const messageFields: INodeProperties[] = [
 		},
 	},
 	{
-		...customReviewJsonField,
+		displayName: 'Payload (JSON)',
+		name: 'pluginPayload',
+		type: 'json',
+		default: '{}',
+		description: "The full review payload as JSON. Must match the plugin's input schema.",
+		typeOptions: {
+			rows: 6,
+		},
 		displayOptions: {
 			show: {
 				resource: ['message'],
@@ -880,7 +880,6 @@ export const messageFields: INodeProperties[] = [
 			show: {
 				resource: ['message'],
 				operation: ['requestPlugin'],
-				inputMode: ['simple'],
 			},
 		},
 	},

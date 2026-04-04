@@ -2,6 +2,7 @@ import type {
 	IPollFunctions,
 	IExecuteFunctions,
 	IHookFunctions,
+	IWebhookFunctions,
 	ILoadOptionsFunctions,
 	IHttpRequestMethods,
 	IHttpRequestOptions,
@@ -27,7 +28,7 @@ export function extractResourceLocatorValue(param: unknown): string {
  * Make an authenticated API request to the Placet API.
  */
 export async function placetApiRequest(
-	this: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions | IPollFunctions,
+	this: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions | IWebhookFunctions | IPollFunctions,
 	method: IHttpRequestMethods,
 	endpoint: string,
 	body: IDataObject | IDataObject[] | Buffer | undefined = undefined,
